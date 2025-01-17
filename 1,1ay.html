@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalp, Çiçek ve Metin Animasyonu</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            flex-direction: column;
+        }
+
+        .heart-container {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+        }
+
+        #heart-top-left {
+            top: 20px;
+            left: 20px;
+        }
+
+        #heart-top-right {
+            top: 20px;
+            right: 20px;
+        }
+
+        #heart-bottom-left {
+            bottom: 20px;
+            left: 20px;
+        }
+
+        #heart-bottom-right {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        canvas {
+            position: absolute;
+        }
+
+        .text-container {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .message {
+            font-size: 2em;
+            margin-bottom: 10px;
+            color: #ff69b4;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-weight: bold;
+        }
+
+        .signature {
+            font-size: 1.2em;
+            font-style: italic;
+            color: #ff69b4;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+</head>
+<body>
+    <div class="text-container">
+        <div class="message">1. Ayımız Kutlu Olsun Aşkımmm</div>
+        <div class="signature">Romeo'dan Juliet'e</div>
+    </div>
+    <canvas id="flowerCanvas"></canvas>
+    <div id="heart-top-left" class="heart-container">
+        <canvas id="kalpCanvasTopLeft"></canvas>
+    </div>
+    <div id="heart-top-right" class="heart-container">
+        <canvas id="kalpCanvasTopRight"></canvas>
+    </div>
+    <div id="heart-bottom-left" class="heart-container">
+        <canvas id="kalpCanvasBottomLeft"></canvas>
+    </div>
+    <div id="heart-bottom-right" class="heart-container">
+        <canvas id="kalpCanvasBottomRight"></canvas>
+    </div>
+    <canvas id="kalpCicekCanvas"></canvas>
+     <canvas id="centerHeartCanvas"></canvas>
+    <script>
+       // Helper function to get a random number
+        const getRandomNumber = (min, max) => Math.random() * (max - min) + min;
+
+        // Fabric.js canvas ayarları
+        const canvasElement = document.getElementById('flowerCanvas');
+        const canvas = new fabric.Canvas(canvasElement);
+        let flowerData = [];
+        const particles = [];
+        let animationFrame = null;
+         // kalp canvas ayarları
+        const kalpCanvas = document.getElementById('kalpCicekCanvas');
+        const kalpCtx = kalpCanvas.getContext('2d');
+
+        kalpCanvas.width = 600;
+        kalpCanvas.height = 600;
+
+        const centerX = kalpCanvas.width / 2;
+        const centerY = kalpCanvas.height / 2;
+        const scale = 17;
+        let kalpI = 0;
+        const totalIterations = 2500;
+        const flowerColors = {
+          color1: '#ce93d8',  // Mor tonları
+           color2: '#9c27b0',
+          leafColor: 'lime'
+       };
+
+       // Ortadaki kalp canvas ayarları
+        const centerHeartCanvas = document.getElementById('centerHeartCanvas');
+       const centerHeartCtx = centerHeartCanvas.getContext('2d');
+
+       centerHeartCanvas.width = 300;  // Ortadaki kalbin boyutu ayarlanabilir
+       centerHeartCanvas.height = 300;
+
+       const centerHeartCenterX = centerHeartCanvas.width / 2;
+        const centerHeartCenterY = centerHeartCanvas.height / 2;
+       const centerHeartScale = 6;
+
+        let centerHeartI = 0; // kalbin çizimini takip için
+      const centerTotalIterations = 2500;
+         function xt(t) {
+            return 16 * Math.pow(Math.sin(t), 3);
+        }
+
+        function yt(t) {
+            return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+        }
+
+        function drawCenterHeart() {
+             centerHeartCtx.clearRect(0, 0, centerHeartCanvas.width, centerHeartCanvas.height); // Her frame'de temizle
+
+            if (centerHeartI >= centerTotalIterations) {
+                return;
+            }
+
+           const x = xt(centerHeartI) * centerHeartScale;
+           const y = yt(centerHeartI) * centerHeartScale;
+
+           centerHeartCtx.beginPath();
+           centerHeartCtx.moveTo(centerHeartCenterX, centerHeartCenterY);
+            centerHeartCtx.lineTo(centerHeartCenterX + x, centerHeartCenterY - y);
+            centerHeartCtx.strokeStyle = '#ff69b4'; // Pembe renk
+           centerHeartCtx.lineWidth = 2;
+           centerHeartCtx.stroke();
+              centerHeartI++;
+          requestAnimationFrame(drawCenterHeart); // Animasyonu tekrarla
+
+        }
+         function drawKalp() {
+             kalpCtx.beginPath();
+            if (kalpI >= totalIterations) {
+                return;
+            }
+            const x = xt(kalpI) * scale;
+            const y = yt(kalpI) * scale;
+            kalpCtx.moveTo(centerX, centerY);
+           kalpCtx.lineTo(centerX + x, centerY - y);
+            kalpCtx.strokeStyle = 'red';
+           kalpCtx.stroke();
+        }
+         function drawFlower(x, y, scale, angle, colors) {
+
+            // Çiçek sapı
+            kalpCtx.beginPath();
+            kalpCtx.moveTo(x, y);
+            kalpCtx.lineTo(x, y - 100);
+            kalpCtx.strokeStyle = colors.color2;
+            kalpCtx.lineWidth = 2;
+            kalpCtx.stroke();
+
+            // Çiçek üst kısmı
+            kalpCtx.beginPath();
+            kalpCtx.moveTo(x, y - 100);
+            kalpCtx.bezierCurveTo(x - 20, y - 115, x - 10, y - 130, x, y - 130);
+            kalpCtx.bezierCurveTo(x + 10, y - 130, x + 20, y - 115, x, y - 100);
+            kalpCtx.fillStyle = colors.color1;
+            kalpCtx.fill();
+
+            // Yaprak 1
+            kalpCtx.beginPath();
+            kalpCtx.ellipse(x - 10, y - 80, 15, 15, Math.PI / 180 * angle, 0, 2 * Math.PI);
+           kalpCtx.fillStyle = colors.leafColor;
+            kalpCtx.fill();
+
+            // Yaprak 2
+            kalpCtx.beginPath();
+            kalpCtx.ellipse(x + 10, y - 80, 15, 15, Math.PI / 180 * -angle, 0, 2 * Math.PI);
+           kalpCtx.fillStyle = colors.leafColor;
+            kalpCtx.fill();
+        }
+         function drawKalpCicekFrame() {
+           drawKalp();
+
+             // Çiçekler (Turtle mantığıyla, kalbi izleyerek çizilen çiçekler)
+            for (let i = 0; i < 2500; i++) {
+                 const x = xt(i, 15);
+               const y = yt(i, 15) + 200;
+                drawFlower(x, y, 1, 15, flowerColors);
+            }
+
+
+           if (kalpI < totalIterations) {
+                    kalpI++;
+                    requestAnimationFrame(drawKalpCicekFrame);
+             }
+       }
+        function resizeCanvas() {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+            canvas.setDimensions({ width: window.innerWidth, height: window.innerHeight });
+           // Ortadaki kalbin konumunu ve büyüklüğünü güncelle
+            centerHeartCanvas.style.left = `${window.innerWidth / 2 - centerHeartCanvas.width / 2}px`;
+            centerHeartCanvas.style.top = `${window.innerHeight / 2 - centerHeartCanvas.height / 2}px`;
+        }
+
+        function initFlowers(canvasWidth, canvasHeight) {
+            const flowers = [
+                {
+                    x: canvasWidth / 2 - 200,
+                    y: canvasHeight + 300,
+                    targetY: canvasHeight - canvasHeight / 3,
+                    color1: "#e0f7fa",
+                    color2: "#00ff9a",
+                    angle: 0,
+                    leafY1: canvasHeight + 300,
+                    leafY2: canvasHeight + 300,
+                    leafAngle1: 0,
+                    leafAngle2: 0,
+                    stem: null,
+                    flowerTop: null,
+                    leaf1: null,
+                    leaf2: null,
+                },
+                {
+                    x: canvasWidth / 2,
+                    y: canvasHeight + 300,
+                    targetY: canvasHeight - canvasHeight / 3,
+                    color1: "#e0f7fa",
+                    color2: "#00ff9a",
+                    angle: 0,
+                    leafY1: canvasHeight + 300,
+                    leafY2: canvasHeight + 300,
+                    leafAngle1: 0,
+                    leafAngle2: 0,
+                    stem: null,
+                    flowerTop: null,
+                    leaf1: null,
+                    leaf2: null,
+                },
+                {
+                    x: canvasWidth / 2 + 200,
+                    y: canvasHeight + 300,
+                    targetY: canvasHeight - canvasHeight / 3,
+                    color1: "#e0f7fa",
+                    color2: "#00ff9a",
+                    angle: 0,
+                    leafY1: canvasHeight + 300,
+                    leafY2: canvasHeight + 300,
+                    leafAngle1: 0,
+                    leafAngle2: 0,
+                    stem: null,
+                    flowerTop: null,
+                    leaf1: null,
+                    leaf2: null,
+                }
+            ];
+
+            flowers.forEach(flower => {
+                flower.stem = new fabric.Path(`M ${flower.x} ${flower.y} L ${flower.x} ${flower.y - 150}`, {
+                    stroke: flower.color2,
+                    strokeWidth: 2,
+                    fill: null,
+                    selectable: false
+                });
+                flower.flowerTop = new fabric.Path(`M ${flower.x} ${flower.y - 150} C ${flower.x - 30} ${flower.y - 150 - 15} ${flower.x - 15} ${flower.y - 150 - 30} ${flower.x} ${flower.y - 150 - 30} C ${flower.x + 15} ${flower.y - 150 - 30} ${flower.x + 30} ${flower.y - 150 - 15} ${flower.x} ${flower.y - 150}`, {
+                    fill: flower.color1,
+                    stroke: null,
+                    selectable: false
+                });
+
+                flower.leaf1 = new fabric.Ellipse({
+                    left: flower.x - 10,
+                    top: flower.leafY1 - 150,
+                    rx: 20,
+                    ry: 20,
+                    fill: "lime",
+                    angle: 0,
+                    selectable: false
+                });
+
+                flower.leaf2 = new fabric.Ellipse({
+                    left: flower.x + 10,
+                    top: flower.leafY2 - 150,
+                    rx: 20,
+                    ry: 20,
+                    fill: "lime",
+                    angle: 0,
+                    selectable: false
+                });
+
+                canvas.add(flower.stem, flower.flowerTop, flower.leaf1, flower.leaf2);
+
+            });
+            return flowers;
+        }
+
+        function drawFlower(flower) {
+            const stemHeight = 150;
+            flower.stem.set({
+                path: `M ${flower.x} ${flower.y} L ${flower.x} ${flower.y - stemHeight}`
+            });
+            flower.flowerTop.set({
+                path: `M ${flower.x} ${flower.y - stemHeight} C ${flower.x - 30} ${flower.y - stemHeight - 15} ${flower.x - 15} ${flower.y - stemHeight - 30} ${flower.x} ${flower.y - stemHeight - 30} C ${flower.x + 15} ${flower.y - stemHeight - 30} ${flower.x + 30} ${flower.y - stemHeight - 15} ${flower.x} ${flower.y - stemHeight}`
+            });
+            flower.leaf1.set({
+                left: flower.x - 10,
+                top: flower.leafY1 - 150,
+                angle: flower.leafAngle1
+            });
+            flower.leaf2.set({
+                left: flower.x + 10,
+                top: flower.leafY2 - 150,
+                angle: flower.leafAngle2
+            });
+        }
+
+        function createParticles() {
+            for (let i = 0; i < 200; i++) {
+                particles.push({
+                    x: Math.random() * canvasElement.width,
+                    y: Math.random() * canvasElement.height,
+                    radius: Math.random() * 1.5,
+                    speedX: (Math.random() - 0.5) * 0.4,
+                    speedY: (Math.random() - 0.5) * 0.4,
+                    object: null
+                });
+            }
+        }
+
+        createParticles();
+
+        function drawParticles() {
+            particles.forEach(particle => {
+                if (!particle.object) {
+                    const circle = new fabric.Circle({
+                        left: particle.x,
+                        top: particle.y,
+                        radius: particle.radius,
+                        fill: "purple",
+                        selectable: false
+                    });
+                    particle.object = circle;
+                    canvas.add(circle);
+                }
+                particle.object.set({
+                    left: particle.x,
+                    top: particle.y
+                });
+                particle.x += particle.speedX;
+                particle.y += particle.speedY;
+                if (particle.x > canvasElement.width) {
+                    particle.x = 0;
+                }
+                if (particle.x < 0) {
+                    particle.x = canvasElement.width;
+                }
+                if (particle.y > canvasElement.height) {
+                    particle.y = 0;
+                }
+                if (particle.y < 0) {
+                    particle.y = canvasElement.height;
+                }
+            });
+        }
+
+        function drawFlowers() {
+            for (const flower of flowerData) {
+                if (flower.y > flower.targetY) {
+                    flower.y -= 2;
+                    flower.leafY1 -= 2;
+                    flower.leafY2 -= 2;
+                    flower.angle += 0.1;
+                    flower.leafAngle1 += 0.4;
+                    flower.leafAngle2 -= 0.4;
+                    drawFlower(flower);
+                }
+            }
+            drawParticles();
+            canvas.renderAll();
+            animationFrame = fabric.util.requestAnimFrame(drawFlowers);
+        }
+
+        const kalpCanvasIds = ["kalpCanvasTopLeft", "kalpCanvasTopRight", "kalpCanvasBottomLeft", "kalpCanvasBottomRight"];
+        const heartContainers = {
+            kalpCanvasTopLeft: document.getElementById('heart-top-left'),
+            kalpCanvasTopRight: document.getElementById('heart-top-right'),
+            kalpCanvasBottomLeft: document.getElementById('heart-bottom-left'),
+            kalpCanvasBottomRight: document.getElementById('heart-bottom-right'),
+        };
+        const kalpCanvases = {};
+        kalpCanvasIds.forEach(id => {
+            kalpCanvases[id] = document.getElementById(id);
+            kalpCanvases[id].width = 150;
+            kalpCanvases[id].height = 150;
+        });
+        const kalpCtxs = {};
+        kalpCanvasIds.forEach(id => {
+            kalpCtxs[id] = kalpCanvases[id].getContext('2d');
+        });
+
+        function drawKalpFrame(ctx, centerX, centerY) {
+            const scale = 3.5;
+            let kalpI = 0;
+            const totalIterations = 2500;
+            function xt(t) {
+                return 16 * Math.pow(Math.sin(t), 3);
+            }
+            function yt(t) {
+                return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            }
+            function draw() {
+                if (kalpI >= totalIterations) {
+                    return;
+                }
+                const x = xt(kalpI) * scale;
+                const y = yt(kalpI) * scale;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(centerX + x, centerY - y);
+                ctx.strokeStyle = 'red';
+                ctx.stroke();
+                kalpI++;
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+        kalpCanvasIds.forEach(id => {
+            drawKalpFrame(kalpCtxs[id], kalpCanvases[id].width / 2, kalpCanvases[id].height / 2);
+        });
+
+         // Ortadaki kalbi başlat
+         drawCenterHeart();
+         resizeCanvas();
+         flowerData = initFlowers(canvasElement.width, canvasElement.height);
+         drawFlowers();
+         drawKalpCicekFrame();
+        window.addEventListener('resize', () => {
+           resizeCanvas();
+           flowerData = initFlowers(canvasElement.width, canvasElement.height);
+            cancelAnimationFrame(animationFrame);
+            drawFlowers();
+        });
+    </script>
+</body>
+</html>
